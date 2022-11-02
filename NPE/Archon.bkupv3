@@ -1,0 +1,136 @@
+package NPE;
+
+import battlecode.common.*;
+import java.util.Random;
+
+public class Archon extends BaseRobot {
+
+
+    @SuppressWarnings("unused")
+
+    Direction myDir;
+    MapLocation myLoc;
+    public int mapH;
+    public int mapW;
+    public int totalSoldier=0;
+    public int totalMiner=0;
+    public int totalBuilder=0;
+    public int totalSage=0;
+
+    public Archon(RobotController rc){
+	super(rc);
+
+        this.myLoc = rc.getLocation();
+        this.mapH  = rc.getMapHeight();
+        this.mapW  = rc.getMapWidth();
+	//rng.setSeed(rc.getID());
+   }
+
+    public void play() {
+        turnCount++;
+        if (turnCount==1) {
+            // record archon location in shared array
+            try {
+                for (int i = 4; i < 4 + rc.getArchonCount(); i++) {
+                    int value = rc.readSharedArray(i);
+                    if (value == 0) {
+                        MapLocation location = rc.getLocation();
+                        rc.writeSharedArray(i, rc.getArchonCount() * 10000 + location.x * 100 + location.y);
+                        break;
+                    }
+                }
+            } catch(GameActionException e) {}
+        }
+
+       // Pick a direction to build in.
+    	int i;
+        int built=0;
+	Team myteam=rc.getTeam();
+        Direction dir = directions[rng.nextInt(directions.length)];
+
+
+        try {
+	
+	 switch(dir){
+	 case NORTHWEST:
+            rc.setIndicatorString("Trying to build a miner");
+            if (rc.canBuildRobot(RobotType.MINER, dir)) {
+		   rc.buildRobot(RobotType.MINER, dir);
+                   totalMiner++;
+		   //increaseMiner();
+                   built=1;
+            }
+	    break;
+
+         case NORTH:
+	  
+	    if(rc.getTeamGoldAmount(myteam)>100 && totalSage<totalSoldier/50)
+	      {
+		rc.setIndicatorString("Trying to build a SAGE");
+                if (rc.canBuildRobot(RobotType.SAGE, dir)) {
+                rc.buildRobot(RobotType.SAGE, dir);
+                totalSage++;
+                built=1;
+	      }
+	  }
+	  break;
+	 
+	default: 
+
+	   break;
+	 }
+
+
+        if(built==0)
+	{
+	    System.out.println("Building non miner");
+             if (totalBuilder < 2 && turnCount > 800) {
+               rc.setIndicatorString("Trying to build a builder");
+               if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
+                rc.buildRobot(RobotType.BUILDER, dir);
+                totalBuilder++;
+                //increaseBuilder();
+                built=1;
+              }
+            }
+            else {
+	        for(Direction dir2: directions)
+		{
+		System.out.println("Building a soldier for dir" + dir2);
+		if (rc.canBuildRobot(RobotType.SOLDIER, dir2)) {
+                  rc.buildRobot(RobotType.SOLDIER, dir2);
+                  totalSoldier++;
+                  //increaseSoldier();
+		  System.out.println("Built a soldier");
+		  rc.setIndicatorString("Trying to build most soldiers");
+		  break;
+                }
+/*
+	        else if (rc.canBuildRobot(RobotType.MINER, dir2)) {
+                   rc.buildRobot(RobotType.MINER, dir2);
+		   System.out.println("Built a miner instead");
+                   totalMiner++;
+                   //increaseMiner();
+                   built=1;
+		   break;
+        	    }
+*/
+	      }
+	     }
+	    }
+	 //System.out.println("Consumed Bytecount " + Clock.getBytecodeNum() + "totalsoldier" + totalSoldier + " miner"  + totalMiner + "rand dir: " + dir);
+    }  catch (GameActionException e) {
+                // Oh no! It looks like we did something illegal in the Battlecode world. You should
+                // handle GameActionExceptions judiciously, in case unexpected events occur in the game
+                // world. Remember, uncaught exceptions cause your robot to explode!
+                System.out.println(rc.getType() + " Exception");
+                e.printStackTrace();
+
+    }  catch (Exception e) {
+                // Oh no! It looks like our code tried to do something bad. This isn't a
+                // GameActionException, so it's more likely to be a bug in our code.
+               System.out.println(rc.getType() + " Exception");
+                e.printStackTrace();
+    }
+  }
+}
